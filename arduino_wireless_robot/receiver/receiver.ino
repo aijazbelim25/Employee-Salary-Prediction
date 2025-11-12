@@ -174,6 +174,22 @@ void setup() {
   radio.startListening(); // Set as receiver
   
   Serial.println("NRF24L01 initialized successfully");
+  
+  // Initialize controlData with safe default values
+  // This prevents E-Stop from triggering before first data reception
+  controlData.leftJoyX = 512;
+  controlData.leftJoyY = 512;
+  controlData.rightJoyX = 512;
+  controlData.rightJoyY = 512;
+  controlData.pot1 = 512;
+  controlData.pot2 = 512;
+  controlData.buttonRotateCW = true;       // Not pressed (INPUT_PULLUP = HIGH when released)
+  controlData.buttonRotateCCW = true;      // Not pressed
+  controlData.switchGripperClose = true;   // Not active
+  controlData.switchGripperOpen = true;    // Not active
+  controlData.switchEmergencyStop = true;  // Not active (CRITICAL - prevents false E-Stop)
+  
+  Serial.println("Control data initialized with safe defaults");
   Serial.println("Receiver ready - waiting for data...");
   Serial.println("----------------------------------------");
 }
@@ -185,7 +201,8 @@ void loop() {
     radio.read(&controlData, sizeof(controlData));
     
     // ===== EMERGENCY STOP CHECK =====
-    // Active LOW: switchEmergencyStop == 0 means E-Stop is ACTIVE
+    // Active LOW logic: switchEmergencyStop == false (0) means E-Stop switch is PRESSED/ACTIVE
+    // Normal operation: switchEmergencyStop == true (1) when switch is not pressed
     if (!controlData.switchEmergencyStop) {
       // E-STOP ACTIVE - Stop all motors immediately
       setMotor(0, 1, 0);  // Front Left
